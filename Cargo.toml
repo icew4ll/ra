@@ -1,0 +1,9 @@
+[package]
+name = "ra"
+version = "0.1.0"
+authors = ["icew4ll <icew4ll.io>"]
+
+[dependencies]
+ssh2 = "0.3"
+error-chain = "0.11.0"
+csv = "1.0.0-beta.5"
