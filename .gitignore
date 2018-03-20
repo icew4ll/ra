@@ -1,7 +1,7 @@
 /*
 /*/
 *~
-!/src/
+!/src/main.rs
 !.gitignore
 !Cargo.toml
 !README.md
