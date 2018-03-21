@@ -12,9 +12,9 @@ use std::process;
 type Record = (String, String, String);
 
 fn login(ip: String, user: String, pass: String, output: &mut Vec<(String, String, String, String, String, String, String, String)>) {
-    let cmds = vec!["uname -n", "hostname -i", "cat /etc/*release", "httpd -v", "php -i", "perl -v | awk '/This/ {print $4}' | sed -e 's/v//'", "mysql -V", "openssl version"];
+    let cmds = vec!["uname -n", "cat /etc/*release | grep -m 1 -E 'Red Hat|Cent|Debian|PRETTY_NAME'", "httpd -v | awk '/Apache/ {print $3}'", "php -v | awk '/PHP/ {print $2}'", "perl -v | awk '/This/ {print $4}' | sed -e 's/v//'", "mysql -V", "openssl version"];
     let mut data = Vec::new();
-    let tcp = TcpStream::connect(ip).unwrap();
+    let tcp = TcpStream::connect(&ip).unwrap();
     let mut sess = Session::new().unwrap();
     sess.handshake(&tcp).unwrap();
     sess.userauth_password(&user, &pass).unwrap();
@@ -29,14 +29,14 @@ fn login(ip: String, user: String, pass: String, output: &mut Vec<(String, Strin
         channel.wait_close().expect("Could not ls");
         data.push(s.clone().replace("\n", ""));
     }
-    let dname = format!("{}", data[0]);
-    let dip = format!("{}", data[1]);
-    let ddist = format!("{}", data[2]);
-    let dhttpd = format!("{}", data[3]);
-    let dphp = format!("{}", data[4]);
-    let dperl = format!("{}", data[5]);
-    let dsql = format!("{}", data[6]);
-    let dssl = format!("{}", data[7]);
+    let dname = format!("{}", data[0].replace(",", ""));
+    let dip = ip.to_string().replace(":22", "");
+    let ddist = format!("{}", data[1].replace(",", "").replace("PRETTY_NAME=", ""));
+    let dhttpd = format!("{}", data[2].replace(",", ""));
+    let dphp = format!("{}", data[3].replace(",", ""));
+    let dperl = format!("{}", data[4].replace(",", ""));
+    let dsql = format!("{}", data[5].replace(",", ""));
+    let dssl = format!("{}", data[6].replace(",", ""));
     output.push((dname, dip, ddist, dhttpd, dphp, dperl, dsql, dssl));
 }
 
