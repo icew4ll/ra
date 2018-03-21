@@ -1,6 +1,7 @@
 extern crate csv;
 extern crate ssh2;
 
+use std::io;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use ssh2::Session;
@@ -37,14 +38,6 @@ fn login(ip: String, user: String, pass: String, output: &mut Vec<(String, Strin
     let dsql = format!("{}", data[6]);
     let dssl = format!("{}", data[7]);
     output.push((dname, dip, ddist, dhttpd, dphp, dperl, dsql, dssl));
-    // println!("{}", data[0]);
-    // DOUBLE
-    // let mut channel = sess.channel_session().unwrap();
-    // channel.exec("hostname -i").unwrap();
-    // let mut sip = String::new();
-    // channel.read_to_string(&mut sip).unwrap();
-    // channel.wait_close().expect("Could not ls");
-    // output.push((sname.clone().replace("\n", ""), sip.clone().replace("\n", "")));
 }
 
 fn run(conn: &mut Vec<Record>) -> Result<(), Box<Error>> {
@@ -52,9 +45,15 @@ fn run(conn: &mut Vec<Record>) -> Result<(), Box<Error>> {
     let mut rdr = csv::ReaderBuilder::new().flexible(true).from_reader(file);
     for result in rdr.deserialize() {
         let record: Record = result?;
-        // println!("{:?}", record);
         conn.push(record);
     }
+    Ok(())
+}
+
+fn writer() -> Result<(), Box<Error>> {
+    let mut wtr = csv::Writer::from_writer(io::stdout());
+    wtr.write_record(&["Name", "IP", "Distro", "Httpd", "PHP", "Perl", "MySql", "OpenSSL"])?;
+    wtr.flush()?;
     Ok(())
 }
 
@@ -67,16 +66,28 @@ fn main() {
         println!("{}", err);
         process::exit(1);
     }
-    for i in 0..conn.len() {
-        let ip = format!("{}:22", &conn[i].0).as_str().to_owned();
-        let user = conn[i].1.as_str().to_owned();
-        let pass = conn[i].2.as_str().to_owned();
-       // println!("{:?}", conn[i])
+    // loop login on connections
+    for i in &conn {
+        let ip = format!("{}:22", i.0).as_str().to_owned();
+        let user = i.1.as_str().to_owned();
+        let pass = i.2.as_str().to_owned();
         login(ip, user, pass, &mut output);
     }
-    // println!("{}", ip);
-    // println!("{}", user);
-    // println!("{}", pass);
-    // login(ip, user, pass, &mut output);
-    println!("{:?}", output);
+    // run csv writer
+    if let Err(err) = writer() {
+        println!("{}", err);
+        process::exit(1);
+    }
+    // output to stdout as csv
+    for i in &output {
+        let name =  i.0.to_owned();
+        let ip =  i.1.to_owned();
+        let dist =  i.2.to_owned();
+        let http =  i.3.to_owned();
+        let php =  i.4.to_owned();
+        let perl =  i.5.to_owned();
+        let sql =  i.6.to_owned();
+        let ssl =  i.7.to_owned();
+        println!("{},{},{},{},{},{},{},{},", name, ip, dist, http, php, perl, sql, ssl);
+    }
 }
